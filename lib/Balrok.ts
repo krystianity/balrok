@@ -82,6 +82,14 @@ export default class Balrok {
         );
     }
 
+    public getRunningQueries() {
+        return this.queryStreamer.getRunningQueries();
+    }
+
+    public abortRunningQuery(cacheKey: number) {
+        return this.queryStreamer.abortQuery(cacheKey);
+    }
+
     public getCacheKeyResult(cacheKey: number): Promise<any[] | null> {
         return this.cache.getProcessedCacheState(cacheKey).then((state) => {
             if (state) {

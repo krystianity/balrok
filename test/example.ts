@@ -78,10 +78,14 @@ mongoose.connection.once("open", async () => {
         (await balrok.resolve(testModel, query, documentOperation, resolveOptions)) as { cacheKey: number };
     debug(cacheKey);
 
+    assert.ok(balrok.getRunningQueries().length);
+
     await (new Promise((resolve) => setTimeout(resolve, 500)));
 
     const results = await balrok.getCacheKeyResult(cacheKey);
     await balrok.deleteCacheKeyResult(cacheKey);
+
+    assert.ok(!balrok.getRunningQueries().length);
 
     // you can also await the result directly:
 

@@ -61,4 +61,4 @@ process before returning them.
     const results = await balrok.resolve(testModel, query, documentOperation, resolveOptions));
 ```
 
-A full running sample (with mongoose connection) can be found here `test/example.ts`.
+A full running sample (with mongoose connection) can be found [here](test/example.ts).
