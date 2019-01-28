@@ -37,6 +37,11 @@
     "@types/mongodb" "*"
     "@types/node" "*"
 
+"@types/murmurhash@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@types/murmurhash/-/murmurhash-0.0.1.tgz#564a85100cb16eeec43218a09b08cd87da076afc"
+  integrity sha512-jiYuTCJ60WxEDOkJFs2192G/nH0PY8mtyHeZkv5fOQQ5DkSkmEgY7YLzCxyM8Y8jibd8Dprb9bGth4EO34mAjw==
+
 "@types/node@*":
   version "10.12.18"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.18.tgz#1d3ca764718915584fcd9f6344621b7672665c67"

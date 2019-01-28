@@ -58,7 +58,7 @@ mongoose.connection.once("open", async () => {
         },
     };
 
-    const documentOperation = (doc) => {
+    const documentOperation = (doc: any) => {
         return {
             keep: true,
             result: doc.surName,

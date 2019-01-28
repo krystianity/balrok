@@ -246,7 +246,7 @@ export default class QueryStreamer {
                         errorCount++;
                         debug("Error during execution of document operation", error.message);
                     }
-                }).on("error", (error) => {
+                }).on("error", (error: Error) => {
                     clearInterval(intv);
                     clearTimeout(timeout);
                     debug("Streaming query failed with error", error.message);
