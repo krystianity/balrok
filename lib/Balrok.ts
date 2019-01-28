@@ -38,7 +38,7 @@ export default class Balrok {
         debug("Init done.");
     }
 
-    public filter(model: any, query: any,
+    public filter(model: any, query: any, operationName: string,
                   documentOperation: (doc: any) => boolean, resolveOptions: ResolveOptions):
                   Promise<any[] | { cacheKey: number }> {
 
@@ -56,6 +56,7 @@ export default class Balrok {
          return this.queryStreamer.runAndResolveQuery(
              model,
              query,
+             operationName,
              "filter",
              documentOperation as any,
              initialValue,
@@ -69,7 +70,7 @@ export default class Balrok {
          );
     }
 
-    public reduce(model: any, query: any,
+    public reduce(model: any, query: any, operationName: string,
                   documentOperation: (accu: any, doc: any) => any, resolveOptions: ResolveOptions):
                   Promise<any[] | { cacheKey: number }> {
 
@@ -87,6 +88,7 @@ export default class Balrok {
             return this.queryStreamer.runAndResolveQuery(
                 model,
                 query,
+                operationName,
                 "reduce",
                 documentOperation as any,
                 initialValue,
@@ -100,7 +102,7 @@ export default class Balrok {
             );
     }
 
-    public map(model: any, query: any,
+    public map(model: any, query: any, operationName: string,
                documentOperation: (doc: any) => any, resolveOptions: ResolveOptions):
                Promise<any[] | { cacheKey: number }> {
 
@@ -118,6 +120,7 @@ export default class Balrok {
         return this.queryStreamer.runAndResolveQuery(
             model,
             query,
+            operationName,
             "map",
             documentOperation as any,
             initialValue,
@@ -131,7 +134,7 @@ export default class Balrok {
         );
     }
 
-    public resolve(model: any, query: any,
+    public resolve(model: any, query: any, operationName: string,
                    documentOperation: (doc: any) => {keep: boolean, result: any}, resolveOptions: ResolveOptions):
                    Promise<any[] | { cacheKey: number }> {
 
@@ -149,6 +152,7 @@ export default class Balrok {
             return this.queryStreamer.runAndResolveQuery(
                 model,
                 query,
+                operationName,
                 "resolve",
                 documentOperation as any,
                 initialValue,

@@ -69,8 +69,12 @@ mongoose.connection.once("open", async () => {
         limit: 2, // default is null (which will not apply any limit)
     };
 
+    // helps to cache deterministic queries
+    const queryName = "firstNameChris";
+
     const { cacheKey } =
-        (await balrok.filter(testModel, query, documentOperation, resolveOptions)) as { cacheKey: number };
+        (await balrok.filter(testModel, query, queryName,
+            documentOperation, resolveOptions)) as { cacheKey: number };
     debug(cacheKey);
 
     assert.ok(balrok.getRunningQueries().length);
@@ -85,7 +89,7 @@ mongoose.connection.once("open", async () => {
     // you can also await the result directly:
 
     const directResults =
-        (await balrok.filter(testModel, query, documentOperation,
+        (await balrok.filter(testModel, query, "", documentOperation,
             {...resolveOptions, ...{ dontAwait: false }})) as any[];
 
     debug(results!.length, results);

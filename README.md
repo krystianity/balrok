@@ -53,7 +53,7 @@ process before returning them.
         limit: 2, // default is null (which will not apply any limit)
     };
 
-    const results = await balrok.filter(testModel, query, documentOperation, resolveOptions));
+    const results = await balrok.filter(testModel, query, "aQueryName", documentOperation, resolveOptions));
 
     /* Other available operations:
         - await balrok.filter()

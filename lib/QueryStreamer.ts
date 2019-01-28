@@ -20,7 +20,7 @@ export default class QueryStreamer {
         this.queries = [];
     }
 
-    public async runAndResolveQuery(model: any, query: any, operationType: string,
+    public async runAndResolveQuery(model: any, query: any, operationName: string, operationType: string,
                                     documentOperation: (arg1: any, arg2?: any) => any, initialValue: any = null,
                                     options: any = {}, batchSize: number = 512, order: number = -1,
                                     timeoutMs: number = 60 * 1000 * 3, dontAwait: boolean = false,
@@ -44,11 +44,15 @@ export default class QueryStreamer {
                 + OPERATION_TYPES.join(", "));
         }
 
+        // this helps to prevent queries with different documentOperations from being cached
+        operationName = operationName || "any";
+
         // cacheKey is just build on the keys of the query object, therefore merge some values into the names
         // to keep the distinct but still separated per collection, order, limit and operationType
         const additionalQueryDefinition = {
-            ["order" + order]: true,
-            ["limit" + limit]: true,
+            [operationName]: true,
+            ["o" + order]: true,
+            ["l" + limit]: true,
             [operationType]: true,
             [model.collection.name]: true,
         };
@@ -93,7 +97,7 @@ export default class QueryStreamer {
 
         await this.cache.setCacheState(cacheKey, true, null);
 
-        this.addQueryProgress(cacheKey, operationType, query, timeoutMs);
+        this.addQueryProgress(cacheKey, operationName, operationType, query, timeoutMs);
         if (!dontAwait) {
             return this.
                 streamQuery(cacheKey, operationType, model, query, documentOperation,
@@ -151,9 +155,11 @@ export default class QueryStreamer {
         return null;
     }
 
-    private addQueryProgress(cacheKey: number, operationType: string, query: any, timeoutMs: number): number {
+    private addQueryProgress(cacheKey: number, operationName: string,
+                             operationType: string, query: any, timeoutMs: number): number {
         return this.queries.push({
             cacheKey,
+            operationName,
             operationType,
             query,
             startedAt: moment().toDate(),
