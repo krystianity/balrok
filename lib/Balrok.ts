@@ -38,48 +38,128 @@ export default class Balrok {
         debug("Init done.");
     }
 
-    public resolve(model: any, query: any,
-                   documentOperation: (doc: any) => {keep: boolean, result: any}, resolveOptions: ResolveOptions):
-                   Promise<any[] | { cacheKey: number }> {
+    public filter(model: any, query: any,
+                  documentOperation: (doc: any) => boolean, resolveOptions: ResolveOptions):
+                  Promise<any[] | { cacheKey: number }> {
 
-                    const {
-                        options = {},
-                        batchSize = 512,
-                        order = -1,
-                        timeoutMs = 60 * 1000 * 3,
-                        dontAwait = false,
-                        noCache = false,
-                    } = resolveOptions;
+         const {
+             options = {},
+             batchSize = 512,
+             order = -1,
+             timeoutMs = 60 * 1000 * 3,
+             dontAwait = false,
+             noCache = false,
+             initialValue = null,
+             limit = null,
+         } = resolveOptions;
 
-                    return this.queryStreamer.runAndResolveQuery(
-                        model,
-                        query,
-                        documentOperation,
-                        options,
-                        batchSize,
-                        order,
-                        timeoutMs,
-                        dontAwait,
-                        noCache,
-                    );
+         return this.queryStreamer.runAndResolveQuery(
+             model,
+             query,
+             "filter",
+             documentOperation as any,
+             initialValue,
+             options,
+             batchSize,
+             order,
+             timeoutMs,
+             dontAwait,
+             noCache,
+             limit,
+         );
     }
 
-    public resolveFlat(model: any, query: any,
-                       documentOperation: (doc: any) => {keep: boolean, result: any},
-                       options: any = {}, batchSize: number = 512, order: number = -1,
-                       timeoutMs: number = 60 * 1000 * 3, dontAwait: boolean = false, noCache: boolean = false):
-                   Promise<any[] | { cacheKey: number }> {
+    public reduce(model: any, query: any,
+                  documentOperation: (accu: any, doc: any) => any, resolveOptions: ResolveOptions):
+                  Promise<any[] | { cacheKey: number }> {
+
+            const {
+                options = {},
+                batchSize = 512,
+                order = -1,
+                timeoutMs = 60 * 1000 * 3,
+                dontAwait = false,
+                noCache = false,
+                initialValue = null,
+                limit = null,
+            } = resolveOptions;
+
+            return this.queryStreamer.runAndResolveQuery(
+                model,
+                query,
+                "reduce",
+                documentOperation as any,
+                initialValue,
+                options,
+                batchSize,
+                order,
+                timeoutMs,
+                dontAwait,
+                noCache,
+                limit,
+            );
+    }
+
+    public map(model: any, query: any,
+               documentOperation: (doc: any) => any, resolveOptions: ResolveOptions):
+               Promise<any[] | { cacheKey: number }> {
+
+        const {
+            options = {},
+            batchSize = 512,
+            order = -1,
+            timeoutMs = 60 * 1000 * 3,
+            dontAwait = false,
+            noCache = false,
+            initialValue = null,
+            limit = null,
+        } = resolveOptions;
+
         return this.queryStreamer.runAndResolveQuery(
             model,
             query,
-            documentOperation,
+            "map",
+            documentOperation as any,
+            initialValue,
             options,
             batchSize,
             order,
             timeoutMs,
             dontAwait,
             noCache,
+            limit,
         );
+    }
+
+    public resolve(model: any, query: any,
+                   documentOperation: (doc: any) => {keep: boolean, result: any}, resolveOptions: ResolveOptions):
+                   Promise<any[] | { cacheKey: number }> {
+
+            const {
+                options = {},
+                batchSize = 512,
+                order = -1,
+                timeoutMs = 60 * 1000 * 3,
+                dontAwait = false,
+                noCache = false,
+                initialValue = null,
+                limit = null,
+            } = resolveOptions;
+
+            return this.queryStreamer.runAndResolveQuery(
+                model,
+                query,
+                "resolve",
+                documentOperation as any,
+                initialValue,
+                options,
+                batchSize,
+                order,
+                timeoutMs,
+                dontAwait,
+                noCache,
+                limit,
+            );
     }
 
     public getRunningQueries() {

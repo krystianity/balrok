@@ -36,17 +36,11 @@ process before returning them.
 
     await balrok.init();
 
-    const query = {
-        firstName: {
-            $regex: "Chris",
-        },
-    };
+    const query = { /* to resolve fast queries, these should only contain indexed fields */ };
 
-    const documentOperation = (doc) => {
-        return {
-            keep: true,
-            result: doc.surName,
-        };
+    const documentOperation = (doc: any) => {
+        /* instead the actually filtering is done in the streamed document operation */
+        return doc.firstName === "Chris";
     };
 
     const resolveOptions = {
@@ -56,9 +50,17 @@ process before returning them.
         timeoutMs: 5000, // default is 3 minutes
         dontAwait: true, // default is false
         noCache: false, // default is false
+        limit: 2, // default is null (which will not apply any limit)
     };
 
-    const results = await balrok.resolve(testModel, query, documentOperation, resolveOptions));
+    const results = await balrok.filter(testModel, query, documentOperation, resolveOptions));
+
+    /* Other available operations:
+        - await balrok.filter()
+        - await balrok.reduce()
+        - await balrok.map()
+        - await balrok.resolve() // combines filter and map
+    */
 ```
 
 A full running sample (with mongoose connection) can be found [here](test/example.ts).

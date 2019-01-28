@@ -52,17 +52,11 @@ mongoose.connection.once("open", async () => {
 
     await balrok.init();
 
-    const query = {
-        firstName: {
-            $regex: "Chris",
-        },
-    };
+    const query = { /* to resolve fast queries, these should only contain indexed fields */ };
 
     const documentOperation = (doc: any) => {
-        return {
-            keep: true,
-            result: doc.surName,
-        };
+        /* instead the actually filtering is done in the streamed document operation */
+        return doc.firstName === "Chris";
     };
 
     const resolveOptions = {
@@ -72,10 +66,11 @@ mongoose.connection.once("open", async () => {
         timeoutMs: 5000, // default is 3 minutes
         dontAwait: true, // default is false
         noCache: false, // default is false
+        limit: 2, // default is null (which will not apply any limit)
     };
 
     const { cacheKey } =
-        (await balrok.resolve(testModel, query, documentOperation, resolveOptions)) as { cacheKey: number };
+        (await balrok.filter(testModel, query, documentOperation, resolveOptions)) as { cacheKey: number };
     debug(cacheKey);
 
     assert.ok(balrok.getRunningQueries().length);
@@ -90,7 +85,7 @@ mongoose.connection.once("open", async () => {
     // you can also await the result directly:
 
     const directResults =
-        (await balrok.resolve(testModel, query, documentOperation,
+        (await balrok.filter(testModel, query, documentOperation,
             {...resolveOptions, ...{ dontAwait: false }})) as any[];
 
     debug(results!.length, results);

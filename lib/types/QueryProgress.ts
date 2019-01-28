@@ -1,5 +1,6 @@
 export interface QueryProgress {
     cacheKey: number;
+    operationType: string;
     query: any;
     startedAt: Date;
     timesoutAt: Date;

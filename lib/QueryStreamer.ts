@@ -6,6 +6,8 @@ import Cache from "./Cache";
 import { QueryProgress } from "./types/QueryProgress";
 import moment = require("moment");
 
+const OPERATION_TYPES = ["resolve", "filter", "reduce", "map"];
+
 export default class QueryStreamer {
 
     private readonly config: BalrokConfig;
@@ -18,11 +20,12 @@ export default class QueryStreamer {
         this.queries = [];
     }
 
-    public async runAndResolveQuery(model: any, query: any,
-                                    documentOperation: (doc: any) => {keep: boolean, result: any},
+    public async runAndResolveQuery(model: any, query: any, operationType: string,
+                                    documentOperation: (arg1: any, arg2?: any) => any, initialValue: any = null,
                                     options: any = {}, batchSize: number = 512, order: number = -1,
                                     timeoutMs: number = 60 * 1000 * 3, dontAwait: boolean = false,
-                                    noCache: boolean = false): Promise<any[] | { cacheKey: number }> {
+                                    noCache: boolean = false, limit: number | null = null):
+                                        Promise<any[] | { cacheKey: number }> {
 
         if (!model || typeof model.find !== "function") {
             throw new Error("Please pass a valid mongoose (schema) model: " + JSON.stringify(model));
@@ -36,7 +39,21 @@ export default class QueryStreamer {
             throw new Error("Please pass a valid options object: " + JSON.stringify(options));
         }
 
-        const combinedQueryDescription = {...query, ...options, ...{ order }};
+        if (OPERATION_TYPES.indexOf(operationType) === -1) {
+            throw new Error("Operation type " + operationType + " not allowed, choose one of: "
+                + OPERATION_TYPES.join(", "));
+        }
+
+        // cacheKey is just build on the keys of the query object, therefore merge some values into the names
+        // to keep the distinct but still separated per collection, order, limit and operationType
+        const additionalQueryDefinition = {
+            ["order" + order]: true,
+            ["limit" + limit]: true,
+            [operationType]: true,
+            [model.collection.name]: true,
+        };
+
+        const combinedQueryDescription = { ...query, ...options, ...additionalQueryDefinition };
         const cacheKey = this.cache.getCacheKeyForQuery(combinedQueryDescription);
         const cacheEntry = await this.cache.getCacheState(cacheKey);
 
@@ -76,10 +93,11 @@ export default class QueryStreamer {
 
         await this.cache.setCacheState(cacheKey, true, null);
 
-        this.addQueryProgress(cacheKey, query, timeoutMs);
+        this.addQueryProgress(cacheKey, operationType, query, timeoutMs);
         if (!dontAwait) {
             return this.
-                streamQuery(cacheKey, model, query, documentOperation, options, batchSize, order, timeoutMs)
+                streamQuery(cacheKey, operationType, model, query, documentOperation,
+                    initialValue, options, batchSize, order, timeoutMs, limit)
                 .then(async (result) => {
                     await this.cache.setCacheState(cacheKey, false, result);
                     this.removeQueryProgress(cacheKey);
@@ -93,7 +111,8 @@ export default class QueryStreamer {
 
         // dont await, so run the process and resolve promise immediately
         this.
-            streamQuery(cacheKey, model, query, documentOperation, options, batchSize, order, timeoutMs)
+            streamQuery(cacheKey, operationType, model, query, documentOperation,
+                initialValue, options, batchSize, order, timeoutMs, limit)
             .then(async (result) => {
                 await this.cache.setCacheState(cacheKey, false, result);
                 this.removeQueryProgress(cacheKey);
@@ -132,9 +151,10 @@ export default class QueryStreamer {
         return null;
     }
 
-    private addQueryProgress(cacheKey: number, query: any, timeoutMs: number): number {
+    private addQueryProgress(cacheKey: number, operationType: string, query: any, timeoutMs: number): number {
         return this.queries.push({
             cacheKey,
+            operationType,
             query,
             startedAt: moment().toDate(),
             timesoutAt: moment().add(timeoutMs, "milliseconds").toDate(),
@@ -191,9 +211,10 @@ export default class QueryStreamer {
         });
     }
 
-    private streamQuery(cacheKey: number, model: any, query: any,
-                        documentOperation: (doc: any) => {keep: boolean, result: any},
-                        options: any, batchSize: number, order: number, timeoutMs: number): Promise<any[]> {
+    private streamQuery(cacheKey: number, operationType: string, model: any, query: any,
+                        documentOperation: (arg1: any, arg2?: any) => any, initialValue: any,
+                        options: any, batchSize: number, order: number, timeoutMs: number, limit: number | null):
+                            Promise<any[]> {
         return new Promise((resolve, reject) => {
 
             const startT = Date.now();
@@ -201,6 +222,7 @@ export default class QueryStreamer {
             let documentCount = 0;
             let errorCount = 0;
             let shouldAbortOnNextData = false;
+            let accumulator: any = initialValue;
 
             const stream = model
                 .find(query, null, options)
@@ -236,11 +258,38 @@ export default class QueryStreamer {
                         return;
                     }
 
+                    if (limit !== null && limit < documentCount) {
+                        debug("Query streaming abored as provided limit is reached", cacheKey, limit);
+                        stream.destroy();
+                        return;
+                    }
+
                     documentCount++;
                     try {
-                        const {keep, result} = documentOperation(doc);
-                        if (keep) {
-                            results.push(result);
+                        switch (operationType) {
+
+                            case "resolve":
+                                const {keep, result} = documentOperation(doc);
+                                if (keep) {
+                                    results.push(result);
+                                }
+                                break;
+
+                            case "filter":
+                                if (documentOperation(doc)) {
+                                    results.push(doc);
+                                }
+                                break;
+
+                            case "reduce":
+                                accumulator = documentOperation(accumulator, doc);
+                                break;
+
+                            case "map":
+                                results.push(documentOperation(doc));
+                                break;
+
+                            default: throw new Error("Unhandled operation type: " + operationType);
                         }
                     } catch (error) {
                         errorCount++;
@@ -254,6 +303,11 @@ export default class QueryStreamer {
                 }).on("close", () => {
                     clearInterval(intv);
                     clearTimeout(timeout);
+
+                    if (operationType === "reduce") {
+                        results.push(accumulator);
+                    }
+
                     const diff = Date.now() - startT;
                     debug("Resolved streaming query after", diff, "ms. Processed", documentCount,
                         "documents, on query:", cacheKey, query);
